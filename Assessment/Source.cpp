@@ -218,8 +218,8 @@ void play() {
 
 			// do math here
 		    //charHitChance;
-		if (charHitChanceModifer == true) { enemHitChance -= charHitChanceModifer / 100; }
-		if (enemHitChanceModifer == true) { charHitChance -= enemHitChanceModifer / 100; }
+		    enemHitChance -= charHitChanceModifer / 100; 
+		    charHitChance -= enemHitChanceModifer / 100;
 		   
 			if (enemHitChance >= 5) { charHP -= enemHitDamageRange; }
 			if (charHitChance >= 5) { enemHP -= charHitDamageRange; }
