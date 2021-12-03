@@ -1,0 +1,81 @@
+start
+
+initialize all functions and variables/constants 
+
+main function
+   initialize and set "finished menu" variable to false
+    while "finished menu" is false {
+    initialize and clear "menu choice" value
+    display main menu screen and choices
+    wait for input and change "menu choice" value to inputted value
+
+     if "menu choice" is out of defined range, display wrong key message and break
+      if input is play button, start function to start playing (eg. play function)
+       if input is settings button, start function to start settings screen (eg. settings function)
+	    if input is exit button, set "finished menu" variable to true and exit program
+}
+ 
+ 
+play function
+    initialize all variables/constants for player/enemy (ie. healthpoints, energy)
+	initialize empty variable for input 
+	initialize "game over" variable and set to false
+	
+	while "game over" is false {
+	initialize temporary values for player/enemy (ie. hit chance, hit damage range, energy recharge rate and energy recharge multiplier)
+	
+	if player healthpoints is below 1, set player HP variable to 0
+	if enemy healthpoints is below 1, set enemy HP variable to 0
+	
+	display fight menu on screen along with menu choices and things like player/enemy variables (ie. healthpoints and energy)
+	
+	if player healthpoints is below 1, display "you lose" message on screen, set "game over" variable to true (ending the while loop) and return
+	if enemy healthpoints is below 1, display "you win" message on screen, set "game over" variable to true (ending the while loop) and return
+	
+	if "game over" variable is false, wait for user input
+	
+	//player action logic
+	if input is attack, calculate random hit chance and subract from hit chance variable, also calculate hit damage range and put that into variable
+	
+	if input is special attack
+	 if energy is above some arbitrary amount (eg. 50), calculate random hit chance and subract from hit chance variable, also calculate hit damage range and put that into variable, subract same arbitrary amoumt (eg. 50)
+	 if energy is below some arbitrary amount (eg. 50), display "low energy" message and break
+	 
+	if input is energy recharge, increase energy recharge rate for player this round, enemy has 10% higher hit chance
+	
+	if input is dodge, half energy recharge for this round, and reduce enemy hit chance by 30%
+	
+	if input is heal
+	 if energy is more than 10, half energy and add that energy to player health, never exeeding starting health (eg. health), also can choose another move but cannot be heal again
+	 if energy is less than 10, display "low energy" message and break
+	
+	if input is exit, ask user again, return to main menu and break
+	
+	//enemy action logic
+	Use algorithm + random chance to determine action to take and make that a value
+	if value is attack, calculate random hit chance and subract from hit chance variable, also calculate hit damage range and put that into variable
+	
+	if value is special attack
+	 if energy is above some arbitrary amount (eg. 50), calculate random hit chance and subract from hit chance variable, also calculate hit damage range and put that into variable, subract same arbitrary amoumt (eg. 50)
+	 if energy is below some arbitrary amount (eg. 50), display "low energy" message and break
+	 
+	if value is energy recharge, increase energy recharge rate for enemy this round, player has 10% higher hit chance
+	
+	if value is dodge, half energy recharge for this round, and reduce player hit chance by 30%
+	
+	if value is heal
+	 if energy is more than 10, half energy and add that energy to enemy health, never exeeding starting health (eg. health), also can choose another move but cannot be heal again
+	 if energy is less than 10, display "low energy" message and break
+	
+	//maths
+	
+	calculate chances of both player and enemy attacks hitting first, factoring in hit chance
+	use damage range to calculate health to subtract from player and enemy healthpoints
+	
+        calculate player energy using simple formula of "current energy + 1 * player energy recharge rate"
+	calculate enemy energy using simple formula of "current energy + 1 * enemy energy recharge rate"
+}
+
+
+settings function
+    //todo
