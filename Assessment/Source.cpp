@@ -146,8 +146,10 @@ void play() {
 
 		// heal
 		case playMenuChoices::heal:
-			if (charENG / 2 + charHP > startHP) {
-			}
+			if (charHP >= 100) { std::cout << "Health already at maximum, that's like taking a shower in the rain; it won't make you any cleaner!"; }
+			if (charENG >= 10) { charHP = charHP + charENG; charENG = charENG / 2; }
+			if (charENG <= 10) { std::cout << "Low energy! Recharge energy and retry!"; }
+			if (charHP >= 100) { charHP = startHP; }
 			break;
 
 		// exit
@@ -208,6 +210,10 @@ void play() {
 
 		// heal
 		case 5:
+			if (enemHP >= 100) { std::cout << "Health already at maximum, that's like taking a shower in the rain; it won't make you any cleaner!"; }
+			if (enemENG >= 10) { enemHP = enemHP + enemENG; enemENG = enemENG / 2; }
+			if (enemENG <= 10) { std::cout << "Low energy! Recharge energy and retry!"; }
+			if (enemHP >= 100) { enemHP = startHP; }
 			break;
 		}
 
