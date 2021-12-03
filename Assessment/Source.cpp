@@ -69,8 +69,8 @@ void play() {
 		int enemHitChance = 0;
 		int charHitDamageRange = 0;
 		int enemHitDamageRange = 0;
-		bool charDodge = false;
-		bool enemDodge = false;
+		int charHitChanceModifer = 0;
+		int enemHitChanceModifer = 0;
 
 		int charEngRechargeRate = 10;
 		int enemEngRechargeRate = 10;
@@ -142,11 +142,13 @@ void play() {
 		// recharge
 		case playMenuChoices::recharge:
 			charEngRechargeRate *= EngRechargeMult;
+			charHitChanceModifer = -10;
 			break;
 
 		// dodge
 		case playMenuChoices::dodge:
-			charDodge = true;
+			charEngRechargeRate /= 2;
+			charHitChanceModifer = 30;
 			break;
 
 		// heal
@@ -169,8 +171,9 @@ void play() {
 		system("CLS");
 
 		// enemy NPC logic
-		switch (rand() % 5) {
+		//switch (rand() % 5) {
 
+		switch (1) {
 		// attack
 		case 0:
 		case 1:
@@ -195,11 +198,13 @@ void play() {
 		// recharge
 		case 3:
 			enemEngRechargeRate *= EngRechargeMult;
+			enemHitChanceModifer = -10;
 			break;
 
 		// dodge
 		case 4:
-			enemDodge = true;
+			enemEngRechargeRate /= 2;
+			enemHitChanceModifer = 30;
 			break;
 
 		// heal
@@ -213,8 +218,8 @@ void play() {
 
 			// do math here
 		    //charHitChance;
-		if (charDodge == true) { enemHitChance -= 30 / 100; }
-		if (enemDodge == true) { charHitChance -= 30 / 100; }
+		if (charHitChanceModifer == true) { enemHitChance -= charHitChanceModifer / 100; }
+		if (enemHitChanceModifer == true) { charHitChance -= enemHitChanceModifer / 100; }
 		   
 			if (enemHitChance >= 5) { charHP -= enemHitDamageRange; }
 			if (charHitChance >= 5) { enemHP -= charHitDamageRange; }
