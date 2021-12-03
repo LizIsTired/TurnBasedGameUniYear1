@@ -3,7 +3,7 @@
 #include <stdlib.h> /* srand, rand */
 #include <time.h> /* time */
 #include <limits> /* limits */
-#include "colors.h"
+#include "colors.h" /* colors header */
 
 
 void play();
@@ -65,21 +65,25 @@ void play() {
 
 	while (!gameOver) {
 
-		int charHitChance = 100;
-		int enemHitChance = 100;
-		int charHitDamageRange;
-		int enemHitDamageRange;
+		int charHitChance = 0;
+		int enemHitChance = 0;
+		int charHitDamageRange = 0;
+		int enemHitDamageRange = 0;
+		bool charDodge = false;
+		bool enemDodge = false;
 
 		int charEngRechargeRate = 10;
 		int enemEngRechargeRate = 10;
 		int EngRechargeMult = 4;
+
 		int playMenuChoice;
+
 
 		if (charHP < 1) { charHP = 0; };
 		if (enemHP < 1) { enemHP = 0; };
 
+		// there's something fundementally flawed in this loop, it clears all messages after they've happened, meaning no messages actually show up
 		system("CLS");
-
 
 		//play screen text
 		std::cout << "\n Fight!\n\n\n\n\n\n\n";
@@ -94,20 +98,21 @@ void play() {
 		std::cout << "\n Press " << playMenuChoices::heal << " to heal";
 		std::cout << "\n Press " << playMenuChoices::exitTime << " to exit the game" << std::endl;
 
-		
+		// score check
 		if (charHP < 1) {
-			std::cout << "You lose!\nPress enter twice to go to menu!\n";
+			std::cout << "You lose!\nPress 1 to go to menu!\n";
 			std::cin >> anything; 
 			gameOver = true;
 			return;
 		}
 
 		if (enemHP < 1) {
-			std::cout << "You win!\nPress enter twice to go to menu!\n";
+			std::cout << "You win!\nPress 1 to go to menu!\n";
 			std::cin >> anything;
 			gameOver = true;
 			return;
 		}
+
 		if (!gameOver) {
 			std::cin >> playMenuChoice;
 		}
@@ -141,7 +146,7 @@ void play() {
 
 		// dodge
 		case playMenuChoices::dodge:
-
+			charDodge = true;
 			break;
 
 		// heal
@@ -167,31 +172,19 @@ void play() {
 		switch (rand() % 5) {
 
 		// attack
-		case 0 || 1:
-			if (rand() % 10 > 2) {
-				enemHP -= rand() % 10;
-				std::cout << "\n Did damage!";
-				break;
-			}
-			else {
-				std::cout << "\n Failed!";
-				break;
-			}
+		case 0:
+		case 1:
+			enemHitChance = rand() % 10 + 1;
+			enemHitDamageRange = rand() % 10 + 1;
 			break;
 
 		// special attack
 		case 2:
 			if (enemENG >= 50) {
 				enemENG -= 50;
-				if (rand() % 10 > 5) {
-					charHP -= rand() % (20 + 1 - 5);
-					std::cout << "\n Did damage!";
-					break;
-				}
-				else {
-					std::cout << "\n Failed!";
-					break;
-				}
+				enemHitChance = rand() % 10 + 1;
+				enemHitDamageRange = rand() % (20 + 1 - 5);
+				break;
 			}
 			else {
 				std::cout << "Not enough energy!";
@@ -206,6 +199,7 @@ void play() {
 
 		// dodge
 		case 4:
+			enemDodge = true;
 			break;
 
 		// heal
@@ -218,8 +212,13 @@ void play() {
 		}
 
 			// do math here
-		    charHitChance;
-
+		    //charHitChance;
+		if (charDodge == true) { enemHitChance -= 30 / 100; }
+		if (enemDodge == true) { charHitChance -= 30 / 100; }
+		   
+			if (enemHitChance >= 5) { charHP -= enemHitDamageRange; }
+			if (charHitChance >= 5) { enemHP -= charHitDamageRange; }
+			
 
 
 
@@ -236,11 +235,6 @@ void play() {
 	return;
 }
 
-//int rechargeENG(int charENG, int enemENG, int EngRechargeRate) {
-	//charENG += 1 * EngRechargeRate;
-	//enemENG += 1 * EngRechargeRate;
-	//return charENG, enemENG;
-//}
 
 //settings function
 void settings() {
