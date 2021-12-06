@@ -18,7 +18,7 @@ main function
  
 play function
     initialize all variables/constants for player/enemy (ie. healthpoints, energy)
-	initialize empty variable for input 
+	initialize empty variables for input 
 	initialize "game over" variable and set to false
 	
 	while "game over" is false {
