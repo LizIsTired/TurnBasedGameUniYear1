@@ -3,14 +3,29 @@
 #include <stdlib.h> /* srand, rand */
 #include <time.h> /* time */
 #include <limits> /* limits */
+#include <conio.h> /* getch */
 #include "colors.h" /* colors header */
 
-
 void play();
-void settings();
+void gameplayActionPrinting(std::string result, int hitChance, int attackChance, int hitDamageRange, int specialAttackChance, std::string name);
+void mainMenuPrint(int HP, int HP2, int playerENERGY, int enemyENERGY);
 
-int roundsVar = 1;
+struct user {
+	std::string name;
+	int HP;
+	int ENERGY;
 
+	int hitChance;
+	int hitDamageRange;
+	int hitChanceModifier;
+	int energyRechargeRate;
+
+	std::string result;
+	std::string damage;
+
+	bool success;
+	bool healChosen;
+};
 enum mainMenuChoices { playButton = 1, exitButton, settingsButton };
 enum playMenuChoices { attack = 1, specialAttack, recharge, dodge, heal, exitTime };
 
@@ -20,16 +35,15 @@ int main() {
 
 		int menuChoice = 0;
 		std::cout << "\n Menu:\n\n\n\n - Play: " << mainMenuChoices::playButton;
-		//std::cout << "\n - Settings: " << mainMenuChoices::settingsButton;
 		std::cout << "\n - Exit: " << mainMenuChoices::exitButton << std::endl;
 
 		std::cin >> menuChoice;
 		switch (menuChoice) {
-			if (menuChoice < 1 || menuChoice > 3) { std::cout << "Please enter a valid selection"; break; }
+			if (menuChoice < playButton || menuChoice > settingsButton) { std::cout << "Please enter a valid selection"; break; }
 		case mainMenuChoices::playButton:
 			play();
 			menuChoice = 0;
-			system("CLS");
+			system("CLS"); // using system commands is not ideal, but for this purpose it works
 			break;
 
 		case mainMenuChoices::exitButton:
@@ -38,12 +52,6 @@ int main() {
 			menuChoice = 0;
 			system("CLS");
 			break;
-
-			/*case mainMenuChoices::settingsButton:
-				settings();
-				menuChoice = 0;
-				system("CLS");
-				break;*/
 		}
 		// user input validation
 		std::cin.clear();
@@ -52,89 +60,101 @@ int main() {
 	}
 }
 
+/// <summary>
+/// Initialize isolated play session.
+/// </summary>
 void play() {
-	// "permanant" variables, doesn't get reset each round
-	int startHP = 100;
-	int startENG = 50;
+	// player and enemy constants and assignment for hp, energy, attack chances, game state
+	const int startHP = 100;
+	const int startENERGY = 50;
 
-	int charHP = startHP;
-	int enemHP = startHP;
-	int charENG = startENG;
-	int enemENG = startENG;
+	user Player;
+	user Enemy;
+
+	Player.name = "You";
+	Enemy.name = "Enemy";
+
+	Player.HP = startHP;
+	Player.ENERGY = startENERGY;
+
+	Enemy.HP = startHP;
+	Enemy.ENERGY = startENERGY;
 
 	int specialAttackChance = 8;
 	int attackChance = 5;
 
-	char anything;
-
 	bool gameOver = false;
 	bool firstTurn = true;
 
+
+	playMenuChoices chosenAction;
+	
+	// srand seed assignment
 	srand(time(NULL));
 
 	while (!gameOver) {
-		// "temporary" variables, does get reset each round
-		int charHitChance = 0;
-		int enemHitChance = 0;
-		int charHitDamageRange = 0;
-		int enemHitDamageRange = 0;
-		int charHitChanceModifer = 0;
-		int enemHitChanceModifer = 0;
-		int charEngRechargeRate = 10;
-		int enemEngRechargeRate = 10;
-		int EngRechargeMult = 4;
+		// player and enemy internal variables, gets reset each round
+
+		struct user players[2] = { Player, Enemy };
+		int numberOfPlayers = 2;
+
+		Player.hitChance = 0;
+		Player.hitDamageRange = 0;
+		Player.hitChanceModifier = 0;
+		Player.energyRechargeRate = 10;
+
+		Enemy.hitChance = 0;
+		Enemy.hitDamageRange = 0;
+		Enemy.hitChanceModifier = 0;
+		Enemy.energyRechargeRate = 10;
+
+
+		int EnergyRechargeMult = 4;
+
 		int playMenuChoice;
 		bool exitConfirm = false;
+
+
+
+
 		std::string exitConfirmVar;
-		std::string charResult;
-		std::string enemResult;
-		std::string charDamage;
-		std::string enemDamage;
 
 		if (firstTurn == true) {
 			//play screen text
 			system("CLS");
-			std::cout << "\n Fight!\n\n\n\n\n\n\n";
-			std::cout << FGRN(" Player HP:") << FGRN(<< charHP << );
-			std::cout << FRED("    Enemy HP:") << FRED(<< enemHP << );
-			std::cout << FGRN("\n Player Energy:") << FGRN(<< charENG << );
-			std::cout << FRED(" Enemy Energy:") << FRED(<< enemENG << );
-			std::cout << "\n\n\n\n Press " << playMenuChoices::attack << " for a regular attack (has 80% hit chance)";
-			std::cout << "\n Press " << playMenuChoices::specialAttack << " for a special attack (has 50% hit chance)";
-			std::cout << "\n Press " << playMenuChoices::recharge << " to recharge energy (recharges energy 4 times faster for this turn, but gives enemy 10% higher hit chance)";
-			std::cout << "\n Press " << playMenuChoices::dodge << " to dodge (decreases enemy hit chance by 30%, but halves energy recharge rate)";
-			std::cout << "\n Press " << playMenuChoices::heal << " to heal (heal half your energy up to max health, and gives you chance to use another action)";
-			std::cout << "\n Press " << playMenuChoices::exitTime << " to exit the game";
-			std::cout << std::endl;
+			mainMenuPrint(Player.HP, Enemy.HP, Player.ENERGY, Enemy.ENERGY);
 		}
 
-		charResult = "";
-		enemResult = "";
-		charDamage = "";
-		enemDamage = "";
-		bool charSuccess = false;
-		bool enemSuccess = false;
-		bool charHealChosen = false;
-		bool enemHealChosen = false;
+		// hate this, empty assignment for strings, resets the result each iteration
+		Player.result = "";
+		Enemy.result = "";
+		Player.damage = "";
+		Enemy.damage = "";
+
+		Player.success = false;
+		Enemy.success = false;
+
+		Player.healChosen = false;
+		Enemy.healChosen = false;
 
 		// score check
-		if (charHP < 1) {
+		if (Player.HP < 1) {
 			std::cout << FYEL(" \nYou lose!\nPress 1 to go to menu!\n");
-			std::cin >> anything;
+			_getch();
 			gameOver = true;
 			return;
 		}
 
-		if (enemHP < 1) {
+		if (Enemy.HP < 1) {
 			std::cout << FYEL(" \nYou win!\nPress 1 to go to menu!\n");
-			std::cin >> anything;
+			_getch();
 			gameOver = true;
 			return;
 		}
-
+		
 		// player action
-		while (charSuccess == false) {
-			while (!charHealChosen) {
+		while (Player.success == false) {
+			while (!Player.healChosen) {
 
 				std::cin.clear();
 				std::cin.ignore(std::numeric_limits<char>::max(), '\n');
@@ -146,70 +166,66 @@ void play() {
 
 					if (playMenuChoice < 1 || playMenuChoice > 6) { std::cout << FBLU(" \nPlease enter a valid selection"); break; }
 
-					// attack
 				case playMenuChoices::attack:
-					charHitChance = rand() % 10 + 1;
-					charHitDamageRange = rand() % 10 + 1;
-					charResult = "attack";
-					charSuccess = true;
-					charHealChosen = true;
+					Player.hitChance = rand() % 10 + 1;
+					Player.hitDamageRange = rand() % 10 + 1;
+					// we need to check the players move later
+					Player.result = "attack";
+					Player.success = true;
+					Player.healChosen = true;
 					break;
 
-					// special attack
 				case playMenuChoices::specialAttack:
-					if (charENG >= 50) {
-						charENG -= 50;
-						charHitChance = rand() % 10 + 1;
-						charHitDamageRange = rand() % (20 + 1 - 5);
-						charResult = "special attack";
-						charSuccess = true;
-						charHealChosen = true;
+					if (Player.ENERGY >= 50) {
+						Player.ENERGY -= 50;
+						Player.hitChance = rand() % 10 + 1;
+						Player.hitDamageRange = rand() % (20 + 1 - 5);
+						Player.result = "special attack";
+						Player.success = true;
+						Player.healChosen = true;
 						break;
 					}
 					else {
 						std::cout << FBLU("\n Not enough energy!\n");
-						charSuccess = false;
+						Player.success = false;
 						break;
 					}
 					break;
 
-					// recharge
 				case playMenuChoices::recharge:
-					charEngRechargeRate *= EngRechargeMult;
-					charHitChanceModifer = -10;
-					charResult = "recharge";
-					charSuccess = true;
-					charHealChosen = true;
+					Player.energyRechargeRate *= EnergyRechargeMult;
+					Player.hitChanceModifier = -10;
+					Player.result = "recharge";
+					Player.success = true;
+					Player.healChosen = true;
 					break;
 
-					// dodge
 				case playMenuChoices::dodge:
-					charEngRechargeRate /= 2;
-					charHitChanceModifer = 30;
-					charResult = "dodge";
-					charSuccess = true;
-					charHealChosen = true;
+					Player.energyRechargeRate /= 2;
+					Player.hitChanceModifier = 30;
+					Player.result = "dodge";
+					Player.success = true;
+					Player.healChosen = true;
 					break;
 
-					// heal
 				case playMenuChoices::heal:
 
-					if (charENG >= 10 && charHP >= 100) {
+					if (Player.ENERGY >= 10 && Player.HP >= 100) {
 						std::cout << FBLU("\n Health already at maximum, that's like taking a shower in the rain; it won't make you any cleaner!\n");
-						charSuccess = false;
+						Player.success = false;
 					}
-					else if (charENG <= 10) {
+					else if (Player.ENERGY <= 10) {
 						std::cout << FBLU("\n Low energy! Recharge energy and retry!\n");
-						charSuccess = false;
+						Player.success = false;
 					}
-					else if (charENG >= 10 && charHP <= 100) {
-						charHP = charHP + charENG; charENG = charENG / 2;
-						charResult = "heal";
-						charSuccess = true;
+					else if (Player.ENERGY >= 10 && Player.HP <= 100) {
+						Player.HP = Player.HP + Player.ENERGY; Player.ENERGY = Player.ENERGY / 2;
+						Player.result = "heal";
+						Player.success = true;
 					}
 
-					if (charSuccess == true) { std::cout << FBLU(" \nChoose another action other than heal!\n"); }
-					if (charHP >= startHP + 1) { charHP = startHP; charSuccess = true; }
+					if (Player.success == true) { std::cout << FBLU(" \nChoose another action other than heal!\n"); }
+					if (Player.HP >= startHP + 1) { Player.HP = startHP; Player.success = true; }
 					break;
 
 					// exit
@@ -219,20 +235,20 @@ void play() {
 						std::cout << FBLU(" \nPress 1 to exit!\nPress 2 to return to game!\n");
 						std::cin >> exitConfirmVar;
 						if (exitConfirmVar == "1") {
-							charSuccess = true;
-							charHealChosen = true;
+							Player.success = true;
+							Player.healChosen = true;
 							return;
 							break;
 						}
 						else {
-							charSuccess = false;
-							charHealChosen = true;
+							Player.success = false;
+							Player.healChosen = true;
 							break;
 						}
 					}
 					else {
-						charSuccess = false;
-						charHealChosen = true;
+						Player.success = false;
+						Player.healChosen = true;
 						break;
 					}
 				}
@@ -240,73 +256,73 @@ void play() {
 		}
 
 		// enemy NPC logic
-		while (enemSuccess == false) {
-			while (!enemHealChosen) {
+		while (Enemy.success == false) {
+			while (!Enemy.healChosen) {
 				switch (rand() % 6) {
 
 					// attack
 				case 0:
 				case 1:
-					enemHitChance = rand() % 10 + 1;
-					enemHitDamageRange = rand() % 10 + 1;
-					enemResult = "attack";
-					enemSuccess = true;
-					enemHealChosen = true;
+					Enemy.hitChance = rand() % 10 + 1;
+					Enemy.hitDamageRange = rand() % 10 + 1;
+					Enemy.result = "attack";
+					Enemy.success = true;
+					Enemy.healChosen = true;
 					break;
 
 					// special attack
 				case 2:
-					if (enemENG >= 50) {
-						enemENG -= 50;
-						enemHitChance = rand() % 10 + 1;
-						enemHitDamageRange = rand() % (20 + 1 - 5);
-						enemResult = "special attack";
-						enemSuccess = true;
-						enemHealChosen = true;
+					if (Enemy.ENERGY >= 50) {
+						Enemy.ENERGY -= 50;
+						Enemy.hitChance = rand() % 10 + 1;
+						Enemy.hitDamageRange = rand() % (20 + 1 - 5);
+						Enemy.result = "special attack";
+						Enemy.success = true;
+						Enemy.healChosen = true;
 						break;
 					}
 					else {
-						enemSuccess = false;
+						Enemy.success = false;
 						break;
 					}
 					break;
 
 					// recharge
 				case 3:
-					enemEngRechargeRate *= EngRechargeMult;
-					enemHitChanceModifer = -10;
-					enemResult = "recharge";
-					enemSuccess = true;
-					enemHealChosen = true;
+					Enemy.energyRechargeRate *= EnergyRechargeMult;
+					Enemy.hitChanceModifier = -10;
+					Enemy.result = "recharge";
+					Enemy.success = true;
+					Enemy.healChosen = true;
 					break;
 
 					// dodge
 				case 4:
-					enemEngRechargeRate /= 2;
-					enemHitChanceModifer = 30;
-					enemResult = "dodge";
-					enemSuccess = true;
-					enemHealChosen = true;
+					Enemy.energyRechargeRate /= 2;
+					Enemy.hitChanceModifier = 30;
+					Enemy.result = "dodge";
+					Enemy.success = true;
+					Enemy.healChosen = true;
 					break;
 
 					// heal (has high chance in order to give enemy greater opportunity to win in absence of proper algorithm)
 				case 5:
 				case 6:
 				case 7:
-					if (enemENG >= 10 && enemHP >= 100) {
-						enemSuccess = false;
+					if (Enemy.ENERGY >= 10 && Enemy.HP >= 100) {
+						Enemy.success = false;
 					}
-					else if (enemENG <= 10) {
-						enemSuccess = false;
+					else if (Enemy.ENERGY <= 10) {
+						Enemy.success = false;
 					}
-					else if (enemENG >= 10 && enemHP <= 100) {
-						enemHP = enemHP + enemENG; enemENG = enemENG / 2;
-						enemResult = "heal";
-						enemSuccess = true;
+					else if (Enemy.ENERGY >= 10 && Enemy.HP <= 100) {
+						Enemy.HP = Enemy.HP + Enemy.ENERGY; Enemy.ENERGY = Enemy.ENERGY / 2;
+						Enemy.result = "heal";
+						Enemy.success = true;
 					}
 
-					if (enemSuccess == true) {}
-					if (enemHP >= startHP + 1) { enemHP = startHP; enemSuccess = true; }
+					if (Enemy.success == true) {}
+					if (Enemy.HP >= startHP + 1) { Enemy.HP = startHP; Enemy.success = true; }
 					break;
 				}
 			}
@@ -315,121 +331,109 @@ void play() {
 		// lots of funky calculations that I'm really hoping work
 
 		// calculate temp values after random chance and user/enemy action
-		enemHitChance -= charHitChanceModifer / 100;
-		charHitChance -= enemHitChanceModifer / 100;
+		Enemy.hitChance -= Player.hitChanceModifier / 100;
+		Player.hitChance -= Enemy.hitChanceModifier / 100;
 
-		if (charResult == "attack") {
-			if (enemHitChance >= attackChance) {
-				charHP -= enemHitDamageRange;
+		if (Player.result == "attack") {
+			if (Enemy.hitChance >= attackChance) {
+				Player.HP -= Enemy.hitDamageRange;
 			}
 		}
-		if (charResult == "special attack") {
-			if (enemHitChance >= specialAttackChance) {
-				charHP -= enemHitDamageRange;
+		if (Player.result == "special attack") {
+			if (Enemy.hitChance >= specialAttackChance) {
+				Player.HP -= Enemy.hitDamageRange;
 			}
 		}
-		if (enemResult == "attack") {
-			if (charHitChance < attackChance) {
-				enemHP -= charHitDamageRange;
+		if (Enemy.result == "attack") {
+			if (Player.hitChance < attackChance) {
+				Enemy.HP -= Player.hitDamageRange;
 			}
 		}
-		if (enemResult == "special attack") {
-			if (charHitChance >= specialAttackChance) {
-				enemHP -= charHitDamageRange;
+		if (Enemy.result == "special attack") {
+			if (Player.hitChance >= specialAttackChance) {
+				Enemy.HP -= Player.hitDamageRange;
 			}
 		}
 
 		// energy recharge
-		charENG += 1 * charEngRechargeRate;
-		enemENG += 1 * enemEngRechargeRate;
+		Player.ENERGY += 1 * Player.energyRechargeRate;
+		Enemy.ENERGY += 1 * Enemy.energyRechargeRate;
 
 		// clamp energy to 100
-		if (charENG > 100) { charENG = 100; }
-		if (enemENG > 100) { enemENG = 100; }
+		if (Player.ENERGY > 100) { Player.ENERGY = 100; }
+		if (Enemy.ENERGY > 100) { Enemy.ENERGY = 100; }
 
 		firstTurn = false;
 
 		// round health to 0 if below 1
-		if (charHP < 1) { charHP = 0; };
-		if (enemHP < 1) { enemHP = 0; };
+		if (Player.HP < 1) { Player.HP = 0; };
+		if (Enemy.HP < 1) { Enemy.HP = 0; };
 
 		system("CLS");
 
 		// play screen text
-		std::cout << "\n Fight!\n\n\n\n\n\n\n";
-		std::cout << FGRN(" Player HP:") << FGRN(<< charHP << );
-		std::cout << FRED("    Enemy HP:") << FRED(<< enemHP << );
-		std::cout << FGRN("\n Player Energy:") << FGRN(<< charENG << );
-		std::cout << FRED(" Enemy Energy:") << FRED(<< enemENG << );
-		std::cout << "\n\n\n\n Press " << playMenuChoices::attack << " for a regular attack (has 80% hit chance)";
-		std::cout << "\n Press " << playMenuChoices::specialAttack << " for a special attack (has 50% hit chance)";
-		std::cout << "\n Press " << playMenuChoices::recharge << " to recharge energy (recharges energy 4 times faster for this turn, but gives enemy 10% higher hit chance)";
-		std::cout << "\n Press " << playMenuChoices::dodge << " to dodge (decreases enemy hit chance by 30%, but halves energy recharge rate)";
-		std::cout << "\n Press " << playMenuChoices::heal << " to heal (heal half your energy up to max health, and gives you chance to use another action)";
-		std::cout << "\n Press " << playMenuChoices::exitTime << " to exit the game";
-
-
+		mainMenuPrint(Player.HP, Enemy.HP, Player.ENERGY, Enemy.ENERGY);
 
 		// player hit chance display
-		if (charResult == "attack") {
-			if (charHitChance >= attackChance) {
-				std::cout << FBLU("\n\n You used ") FBLU(<< charResult << ) FBLU(" and did ") FBLU(<< charHitDamageRange << ) FBLU(" damage!");
-			}
-			else if (charHitChance < attackChance) {
-				std::cout << FBLU("\n\n You tried to use ") FBLU(<< charResult << )  FBLU(" but your attack missed!");
-			}
-		}
-		else if (charResult == "special attack") {
-			if (charHitChance >= specialAttackChance) {
-				std::cout << FBLU("\n\n You used ") FBLU(<< charResult << ) FBLU(" and did ") FBLU(<< charHitDamageRange << ) FBLU(" damage!");
-			}
-			else if (charHitChance < specialAttackChance) {
-				std::cout << FBLU("\n\n You tried to use ") FBLU(<< charResult << )  FBLU(" but your attack missed!");
-			}
-		}
-		else {
-			std::cout << FBLU("\n\n You used ") FBLU(<< charResult << ) FBLU(" and did ") FBLU(<< charHitDamageRange << ) FBLU(" damage!");
-		}
-
-		// enemy hit chance display
-		if (enemResult == "attack") {
-			if (enemHitChance >= attackChance) {
-				std::cout << FBLU("\n\n Enemy used ") FBLU(<< enemResult << ) FBLU(" and did ") FBLU(<< enemHitDamageRange << ) FBLU(" damage!");
-			}
-			else if (enemHitChance < attackChance) {
-				std::cout << FBLU("\n\n Enemy tried to use ") FBLU(<< enemResult << )  FBLU(" but their attack missed!");
-			}
-		}
-		else if (enemResult == "special attack") {
-			if (enemHitChance >= specialAttackChance) {
-				std::cout << FBLU("\n\n Enemy used ") FBLU(<< enemResult << ) FBLU(" and did ") FBLU(<< enemHitDamageRange << ) FBLU(" damage!");
-			}
-			else if (enemHitChance < specialAttackChance) {
-				std::cout << FBLU("\n\n Enemy tried to use ") FBLU(<< enemResult << )  FBLU(" but their attack missed!");
-			}
-		}
-		else {
-			std::cout << FBLU("\n\n Enemy used ") FBLU(<< enemResult << ) FBLU(" and did ") FBLU(<< enemHitDamageRange << ) FBLU(" damage!");
-		}
-		std::cout << std::endl;
+		gameplayActionPrinting(Player.result, Player.hitChance, attackChance, Player.hitDamageRange, specialAttackChance, Player.name);
+		gameplayActionPrinting(Enemy.result, Enemy.hitChance, attackChance, Enemy.hitDamageRange, specialAttackChance, Enemy.name);
 	}
 	return;
 }
 
-
-//settings function, not in use currently
-void settings() {
-	int charHP = 100;
-
-	int settingsMenuChoice;
-
-	system("CLS");
-
-	std::cout << "\n Settings:\n\n\n\n - Rounds:" << roundsVar << "\n - Player Starting Health:" << charHP << "\n\n Press 0 to go to menu...\n";
-	std::cin >> settingsMenuChoice;
-	switch (settingsMenuChoice) {
-	case 0:
-		return;
-		break;
+/// <summary>
+/// (WIP) Prints gameplay action result to console.
+/// </summary>
+/// <param name="result"></param>
+/// <param name="hitChance"></param>
+/// <param name="attackChance"></param>
+/// <param name="hitDamageRange"></param>
+/// <param name="specialAttackChance"></param>
+/// <param name="name"></param>
+void gameplayActionPrinting(std::string result, int hitChance, int attackChance, int hitDamageRange, int specialAttackChance, std::string name) {
+	if (result == "attack") {
+		if (hitChance >= attackChance) {
+			std::cout << FBLU("\n\n ") << FBLU(<< name << ) << FBLU(" used ") << FBLU(<< result << ) FBLU(" and did ") FBLU(<< hitDamageRange << ) FBLU(" damage!");
+		}
+		else if (hitChance < attackChance) {
+			std::cout << FBLU("\n\n ") << FBLU(<< name << ) << FBLU(" tried to use ") << FBLU(<< result << )  FBLU(" but the attack missed!");
+		}
 	}
+	else if (result == "special attack") {
+		if (hitChance >= specialAttackChance) {
+			std::cout << FBLU("\n\n ") << FBLU(<< name << ) << FBLU(" used ") << FBLU(<< result << ) FBLU(" and did ") FBLU(<< hitDamageRange << ) FBLU(" damage!");
+		}
+		else if (hitChance < specialAttackChance) {
+			std::cout << FBLU("\n\n ") << FBLU(<< name << ) << FBLU(" tried to use ") << FBLU(<< result << )  FBLU(" but the attack missed!");
+		}
+	}
+	else {
+		std::cout << FBLU("\n\n ") << FBLU(<< name << ) << FBLU(" used ") << FBLU(<< result << ) FBLU(" and did ") FBLU(<< hitDamageRange << ) FBLU(" damage!");
+	}
+	std::cout << std::endl;
+}
+
+
+/// <summary>
+/// Prints action menu in-game.
+/// </summary>
+/// <param name="HP"></param>
+/// <param name="HP"></param>
+/// <param name="playerENERGY"></param>
+/// <param name="enemyENERGY"></param>
+void mainMenuPrint(int HP, int HP2, int playerENERGY, int enemyENERGY){
+	std::cout << "\n Fight!\n\n\n\n\n\n\n";
+
+	//color values from colors.h
+	std::cout << FGRN(" Player HP:") << FGRN(<< HP << );
+	std::cout << FRED("    Enemy HP:") << FRED(<< HP2 << );
+	std::cout << FGRN("\n Player Energy:") << FGRN(<< playerENERGY << );
+	std::cout << FRED(" Enemy Energy:") << FRED(<< enemyENERGY << );
+
+	std::cout << "\n\n\n\n Press " << playMenuChoices::attack << " for a regular attack (has 80% hit chance)";
+	std::cout << "\n Press " << playMenuChoices::specialAttack << " for a special attack (has 50% hit chance)";
+	std::cout << "\n Press " << playMenuChoices::recharge << " to recharge energy (recharges energy 4 times faster for this turn, but gives enemy 10% higher hit chance)";
+	std::cout << "\n Press " << playMenuChoices::dodge << " to dodge (decreases enemy hit chance by 30%, but halves energy recharge rate)";
+	std::cout << "\n Press " << playMenuChoices::heal << " to heal (heal half your energy up to max health, and gives you chance to use another action)";
+	std::cout << "\n Press " << playMenuChoices::exitTime << " to exit the game";
 }

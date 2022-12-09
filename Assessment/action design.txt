@@ -1,0 +1,13 @@
+action function is called, once for player once for enemy
+
+player and enemy variables turn into generic "user" variables, which get transformed later
+
+if player
+
+do actions using switch
+
+if enemy
+
+do actions using random and switch
+
+can be done in the same function/condition 
